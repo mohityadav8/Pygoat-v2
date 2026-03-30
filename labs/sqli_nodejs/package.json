@@ -1,0 +1,22 @@
+{
+  "name": "pygoat-lab-sqli-nodejs",
+  "version": "1.0.0",
+  "description": "PyGoat v2 — Node.js SQL Injection lab (Goal 7, Deliverable 7.1)",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "test":  "jest --testPathPattern=tests/"
+  },
+  "dependencies": {
+    "ejs":     "^3.1.10",
+    "express": "^4.19.2",
+    "mysql2":  "^3.11.0"
+  },
+  "devDependencies": {
+    "jest":       "^29.7.0",
+    "supertest":  "^7.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

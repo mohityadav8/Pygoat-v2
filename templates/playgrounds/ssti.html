@@ -1,0 +1,236 @@
+{# templates/playgrounds/ssti.html
+   Goal 6.4 — Template Injection Playground
+   Sandboxed Jinja2 REPL with payload history and annotation.
+#}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}SSTI Playground{% endblock %}
+{% block breadcrumb %}Playgrounds / SSTI{% endblock %}
+
+{% block extra_css %}
+<style>
+.pg-shell {
+  background: #1e1e2e;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid #313244;
+}
+.pg-titlebar {
+  background: #313244;
+  padding: var(--space-2) var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: #a6adc8;
+  font-family: var(--font-mono);
+}
+.pg-dot { width: 10px; height: 10px; border-radius: 50%; }
+.pg-dot-r { background: #f38ba8; } .pg-dot-y { background: #f9e2af; } .pg-dot-g { background: #a6e3a1; }
+.pg-body { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); }
+
+.repl-input {
+  width: 100%;
+  background: #11111b;
+  border: 1px solid #313244;
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: #cdd6f4;
+  outline: none;
+  resize: vertical;
+  min-height: 80px;
+}
+.repl-input:focus { border-color: #a6e3a1; }
+
+.output-box {
+  background: #11111b;
+  border: 1px solid #313244;
+  border-radius: var(--radius-sm);
+  padding: var(--space-4);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: #a6e3a1;
+  min-height: 100px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: 1.6;
+}
+.output-box.error-out { color: #f38ba8; }
+.output-box.warn-out  { color: #f9e2af; }
+
+.run-btn {
+  align-self: flex-start;
+  padding: var(--space-2) var(--space-5);
+  background: #a6e3a1;
+  color: #1e1e2e;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+.run-btn:hover { background: #94e2d5; }
+
+.payload-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.payload-chip {
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid #313244;
+  background: #1e1e2e;
+  color: #cba6f7;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+}
+.payload-chip:hover { border-color: #cba6f7; }
+
+.history-entry {
+  padding: var(--space-3);
+  background: #181825;
+  border: 1px solid #313244;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+.history-entry:hover { border-color: #585b70; }
+.history-tmpl { color: #89b4fa; }
+.history-out  { color: #a6e3a1; margin-top: 4px; }
+.history-err  { color: #f38ba8; margin-top: 4px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Jinja2 SSTI Playground</h1>
+    <p class="page-subtitle">Sandboxed template REPL — experiment with Server-Side Template Injection payloads</p>
+  </div>
+  <span class="badge badge-info">Goal 6.4</span>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 300px; gap: var(--space-6)">
+
+  <div>
+    <div class="pg-shell">
+      <div class="pg-titlebar">
+        <div class="pg-dot pg-dot-r"></div>
+        <div class="pg-dot pg-dot-y"></div>
+        <div class="pg-dot pg-dot-g"></div>
+        <span style="margin-left: var(--space-2)">Jinja2 REPL — SandboxedEnvironment</span>
+      </div>
+      <div class="pg-body">
+        <div>
+          <div style="font-size: var(--text-xs); color: #a6adc8; margin-bottom: var(--space-2)">Common payloads</div>
+          <div class="payload-chips">
+            <span class="payload-chip" onclick="setTmpl('{{ "{{" }} 7*7 {{ "}}" }}')">{{ "{{" }} 7*7 {{ "}}" }}</span>
+            <span class="payload-chip" onclick="setTmpl('{{ "{{" }} config {{ "}}" }}')">{{ "{{" }} config {{ "}}" }}</span>
+            <span class="payload-chip" onclick="setTmpl('{{ "{{" }} config.items() {{ "}}" }}')">{{ "{{" }} config.items() {{ "}}" }}</span>
+            <span class="payload-chip" onclick="setTmpl('{{ "{{" }} user {{ "}}" }}')">{{ "{{" }} user {{ "}}" }}</span>
+            <span class="payload-chip" onclick="setTmpl('{{ "{{" }} \'a\'*50 {{ "}}" }}')">{{ "{{" }} 'a'*50 {{ "}}" }}</span>
+            <span class="payload-chip" onclick="setTmpl('{{ "{{" }} \'\'.__class__.__mro__ {{ "}}" }}')">__class__.__mro__</span>
+          </div>
+        </div>
+
+        <div>
+          <label style="font-size: var(--text-xs); color: #a6adc8; display:block; margin-bottom: var(--space-2)">Template input</label>
+          <textarea class="repl-input" id="ssti-input" placeholder="{{ "{{" }} 7*7 {{ "}}" }}">{{ "{{" }} 7*7 {{ "}}" }}</textarea>
+        </div>
+
+        <button class="run-btn" onclick="evaluate()">▶ Render Template</button>
+
+        <div>
+          <div style="font-size: var(--text-xs); color: #a6adc8; margin-bottom: var(--space-2)">Output</div>
+          <div class="output-box" id="ssti-output">// Enter a Jinja2 template above and click Render</div>
+        </div>
+
+        <div id="ssti-note" style="display:none; font-size: var(--text-xs); padding: var(--space-3); background: rgba(249,226,175,0.1); border: 1px solid #f9e2af; border-radius: var(--radius-sm); color: #f9e2af; line-height: 1.6;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: var(--space-4)">
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">Context Variables</span></div>
+      <div class="card-body" style="font-size: var(--text-xs); font-family: var(--font-mono); color: var(--color-text-secondary)">
+        <div style="margin-bottom: var(--space-2)"><span style="color: #89b4fa">config</span> — app configuration dict</div>
+        <div style="margin-bottom: var(--space-2)"><span style="color: #89b4fa">config.SECRET_KEY</span> — app secret key</div>
+        <div style="margin-bottom: var(--space-2)"><span style="color: #89b4fa">user.username</span> — current user</div>
+        <div><span style="color: #89b4fa">user.role</span> — user role</div>
+      </div>
+    </div>
+
+    {% if history %}
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Payload History</span>
+        <span style="font-size:var(--text-xs);color:var(--color-text-muted)">{{ history|length }}</span>
+      </div>
+      <div class="card-body" style="display: flex; flex-direction: column; gap: var(--space-2); max-height: 400px; overflow-y: auto;">
+        {% for item in history %}
+        <div class="history-entry" onclick="setTmpl('{{ item.template|escapejs }}')">
+          <div class="history-tmpl">{{ item.template|truncatechars:60 }}</div>
+          {% if item.output %}
+          <div class="history-out">→ {{ item.output|truncatechars:60 }}</div>
+          {% elif item.error %}
+          <div class="history-err">✗ {{ item.error|truncatechars:60 }}</div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CSRF = '{{ csrf_token }}';
+
+function setTmpl(t) {
+  document.getElementById('ssti-input').value = t;
+}
+
+function evaluate() {
+  const tmpl   = document.getElementById('ssti-input').value;
+  const output = document.getElementById('ssti-output');
+  const note   = document.getElementById('ssti-note');
+  if (!tmpl.trim()) return;
+  output.textContent = '// Rendering…';
+  output.className = 'output-box';
+  note.style.display = 'none';
+
+  fetch('{% url "playgrounds:ssti_evaluate" %}', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+    body:    JSON.stringify({ template: tmpl }),
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.error) {
+      output.textContent = `Error: ${data.error}`;
+      output.className = 'output-box error-out';
+    } else {
+      output.textContent = data.output || '';
+      output.className = data.is_dangerous ? 'output-box warn-out' : 'output-box';
+      if (data.note) {
+        note.style.display = 'block';
+        note.textContent = '⚠ ' + data.note;
+      }
+    }
+  })
+  .catch(e => { output.textContent = `Fetch error: ${e.message}`; });
+}
+
+document.getElementById('ssti-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) evaluate();
+});
+</script>
+{% endblock %}

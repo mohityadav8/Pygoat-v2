@@ -1,0 +1,217 @@
+# docker-compose.yml
+# PyGoat v2 — Master orchestration file
+# Goal 2 — Deliverable 2.2
+#
+# Brings up the core application alongside all lab containers
+# with correct networking and volume isolation.
+#
+# Usage:
+#   docker compose up --build          # first run
+#   docker compose up -d               # background
+#   docker compose down                # stop all
+#   docker compose restart sqli-lab    # reset one lab
+
+version: '3.9'
+
+# ── Networks ──────────────────────────────────────────────────────────────────
+networks:
+  pygoat_net:
+    driver: bridge
+    # Lab containers are on this internal network only.
+    # They are NOT exposed to the public internet — only to the core app.
+
+# ── Volumes ───────────────────────────────────────────────────────────────────
+volumes:
+  postgres_data:
+  redis_data:
+
+# ── Services ──────────────────────────────────────────────────────────────────
+services:
+
+  # ── Infrastructure ──────────────────────────────────────────────────────────
+
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       pygoat
+      POSTGRES_USER:     pygoat
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpassword}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [pygoat_net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pygoat"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks: [pygoat_net]
+
+  # ── Core Application ─────────────────────────────────────────────────────────
+
+  core:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DJANGO_SECRET_KEY:  ${DJANGO_SECRET_KEY:-dev-secret-change-in-production}
+      DJANGO_DEBUG:       "True"
+      ALLOWED_HOSTS:      "0.0.0.0,127.0.0.1,localhost"
+      DATABASE_URL:       postgres://pygoat:${POSTGRES_PASSWORD:-devpassword}@postgres:5432/pygoat
+      LAB_HOST:           "pygoat_net"   # internal Docker network hostname
+      USE_DOCKER_SDK:     "True"
+      REDIS_URL:          redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [pygoat_net]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock   # Docker-in-Docker for LabController
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py loaddata challenges/fixtures/challenges.json &&
+             gunicorn pygoat.wsgi:application --bind 0.0.0.0:8000"
+
+  # ── Lab Microservices ────────────────────────────────────────────────────────
+  # Each lab has its own network alias, Dockerfile, and port mapping.
+  # Lab containers are only accessible on pygoat_net (not the public internet).
+
+  sqli-lab:
+    build:
+      context: ./labs/sqli
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      PORT:       "8001"
+      LAB_SECRET: ${LAB_SECRET:-sqli-lab-dev}
+    networks:
+      pygoat_net:
+        aliases: [sqli-lab]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  xss-lab:
+    build:
+      context: ./labs/xss
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    environment:
+      PORT:       "8002"
+      LAB_SECRET: ${LAB_SECRET:-xss-lab-dev}
+    networks:
+      pygoat_net:
+        aliases: [xss-lab]
+
+  csrf-lab:
+    build:
+      context: ./labs/csrf
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    environment:
+      PORT:       "8003"
+      LAB_SECRET: ${LAB_SECRET:-csrf-lab-dev}
+    networks:
+      pygoat_net:
+        aliases: [csrf-lab]
+
+  idor-lab:
+    build:
+      context: ./labs/idor
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8004:8004"
+    environment:
+      PORT:       "8004"
+      LAB_SECRET: ${LAB_SECRET:-idor-lab-dev}
+    networks:
+      pygoat_net:
+        aliases: [idor-lab]
+
+  ssti-lab:
+    build:
+      context: ./labs/ssti
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8005:8005"
+    environment:
+      PORT:       "8005"
+      LAB_SECRET: ${LAB_SECRET:-ssti-lab-dev}
+    networks:
+      pygoat_net:
+        aliases: [ssti-lab]
+
+  xxe-lab:
+    build:
+      context: ./labs/xxe
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8006:8006"
+    environment:
+      PORT:       "8006"
+      LAB_SECRET: ${LAB_SECRET:-xxe-lab-dev}
+    networks:
+      pygoat_net:
+        aliases: [xxe-lab]
+
+  jwt-lab:
+    build:
+      context: ./labs/jwt
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8007:8007"
+    environment:
+      PORT:       "8007"
+      LAB_SECRET: ${LAB_SECRET:-jwt-lab-dev}
+    networks:
+      pygoat_net:
+        aliases: [jwt-lab]
+
+  bola-lab:
+    build:
+      context: ./labs/bola
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8008:8008"
+    environment:
+      PORT:       "8008"
+      LAB_SECRET: ${LAB_SECRET:-bola-lab-dev}
+    networks:
+      pygoat_net:
+        aliases: [bola-lab]
+
+  supply-lab:
+    build:
+      context: ./labs/supply_chain
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8009:8009"
+    environment:
+      PORT:       "8009"
+      LAB_SECRET: ${LAB_SECRET:-supply-lab-dev}
+    networks:
+      pygoat_net:
+        aliases: [supply-lab]

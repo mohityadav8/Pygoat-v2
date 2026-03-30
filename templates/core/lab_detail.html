@@ -1,0 +1,329 @@
+{# templates/core/lab_detail.html
+   Goal 5 — Deliverable 5.3
+   Standardised lab page layout:
+     Left  panel: description, hints accordion, solution collapsible
+     Right panel: iframe to lab container environment
+#}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ lab.title }}{% endblock %}
+{% block breadcrumb %}
+  <a href="{% url 'lab_registry' %}" style="color: var(--color-text-secondary); text-decoration: none">Labs</a>
+  <span style="color: var(--color-text-muted)"> / </span>
+  {{ lab.title }}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.lab-meta-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+  flex-wrap: wrap;
+}
+
+.lab-iframe-wrapper {
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--color-surface);
+  height: 560px;
+}
+
+.lab-iframe-bar {
+  background: var(--color-bg-secondary);
+  border-bottom: var(--border-width) solid var(--color-border);
+  padding: var(--space-2) var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+}
+
+.iframe-dot { width: 10px; height: 10px; border-radius: 50%; }
+.dot-r { background: #ff5f57; } .dot-y { background: #febc2e; } .dot-g { background: #28c840; }
+
+.lab-iframe-frame {
+  width: 100%;
+  border: none;
+  height: calc(560px - 36px);
+}
+
+.flag-submit-zone {
+  margin-top: var(--space-5);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+}
+
+.flag-input-row { display: flex; gap: var(--space-3); margin-top: var(--space-3); }
+.flag-input-row input { font-family: var(--font-mono); flex: 1; }
+
+.lab-actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  padding-top: var(--space-5);
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+.solution-collapsible details summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-error-bg);
+  border: var(--border-width) solid var(--color-critical-border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-critical);
+}
+.solution-collapsible details[open] summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.solution-collapsible details .solution-body {
+  background: var(--color-bg-secondary);
+  border: var(--border-width) solid var(--color-critical-border);
+  border-top: none;
+  padding: var(--space-4);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+#verify-result { margin-top: var(--space-3); font-size: var(--text-sm); display: none; padding: var(--space-3); border-radius: var(--radius-md); }
+#verify-result.success { background: var(--color-success-bg); color: var(--color-success); }
+#verify-result.error   { background: var(--color-error-bg);   color: var(--color-error);   }
+</style>
+{% endblock %}
+
+{% block content %}
+{# Page header with lab metadata #}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ lab.title }}</h1>
+    <div class="lab-meta-bar" style="margin-top: var(--space-2)">
+      <span class="badge badge-{{ lab.severity }}">{{ lab.severity|upper }}</span>
+      <span class="badge badge-info">{{ lab.owasp_category }}</span>
+      <span class="badge badge-lang" style="background:var(--color-bg-secondary);border-color:var(--color-border);color:var(--color-text-secondary)">
+        {{ lab.language|upper }} / {{ lab.framework }}
+      </span>
+      <span style="font-size: var(--text-xs); color: var(--color-text-muted)">{{ lab.difficulty|capfirst }}</span>
+      <span style="font-size: var(--text-xs); color: var(--color-text-muted)">⚡ {{ lab.xp_reward }} XP</span>
+      {% if attempt.status == 'completed' %}
+      <span class="badge badge-status-completed">✓ Completed ({{ attempt.score }}/100)</span>
+      {% elif attempt.status == 'in_progress' %}
+      <span class="badge badge-status-progress">In Progress</span>
+      {% endif %}
+    </div>
+  </div>
+
+  {# Container health indicator #}
+  <div style="display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-xs)">
+    {% if health.success %}
+    <span style="width:8px;height:8px;border-radius:50%;background:var(--color-success);display:inline-block"></span>
+    <span style="color:var(--color-text-muted)">Container running</span>
+    {% else %}
+    <span style="width:8px;height:8px;border-radius:50%;background:var(--color-critical);display:inline-block"></span>
+    <span style="color:var(--color-text-muted)">Container offline</span>
+    {% endif %}
+  </div>
+</div>
+
+{# ── Two-Panel Lab Layout (Deliverable 5.3) ── #}
+<div class="lab-layout">
+
+  {# LEFT: Description panel #}
+  <div class="lab-description">
+    <div class="lab-panel">
+      <div class="lab-panel-title">About this lab</div>
+      <p style="font-size: var(--text-sm); color: var(--color-text-secondary); line-height: var(--line-height-relaxed)">
+        {{ lab.description }}
+      </p>
+
+      <div style="margin-top: var(--space-5)">
+        <div style="font-size: var(--text-xs); font-weight: var(--font-weight-semibold); text-transform: uppercase; color: var(--color-text-muted); margin-bottom: var(--space-3)">Attack Vectors</div>
+        <div style="display: flex; flex-wrap: wrap; gap: var(--space-2)">
+          {% for tag in lab.tags %}
+          <code>{{ tag }}</code>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    {# Hint Accordion (Deliverable 5.3 + Goal 6.2) #}
+    <div class="hint-accordion">
+      <div class="hint-accordion-title">Hints</div>
+
+      <div class="hint-item {% if attempt.hint_cryptic_used %}open{% endif %}">
+        <button class="hint-item-header" onclick="toggleHint(this, 1, '{{ lab.id }}')">
+          <span class="hint-tier-1">💡 Cryptic Hint — Free</span>
+          <span class="hint-cost">▼</span>
+        </button>
+        <div class="hint-item-body" id="hint-1">
+          {% if attempt.hint_cryptic_used %}
+          <em>Hint already revealed.</em>
+          {% else %}
+          Click to reveal.
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="hint-item {% if attempt.hint_direct_used %}open{% endif %}">
+        <button class="hint-item-header" onclick="toggleHint(this, 2, '{{ lab.id }}')">
+          <span class="hint-tier-2">🔦 Direct Hint — 10 XP</span>
+          <span class="hint-cost">▼</span>
+        </button>
+        <div class="hint-item-body" id="hint-2">
+          {% if attempt.hint_direct_used %}
+          <em>Hint already revealed.</em>
+          {% else %}
+          Click to reveal (costs 10 XP).
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="hint-item">
+        <button class="hint-item-header" onclick="toggleHint(this, 3, '{{ lab.id }}')">
+          <span class="hint-tier-3">📖 Full Walkthrough — 30 XP</span>
+          <span class="hint-cost">▼</span>
+        </button>
+        <div class="hint-item-body" id="hint-3">
+          Click to reveal (costs 30 XP).
+        </div>
+      </div>
+    </div>
+
+    {# Solution Collapsible #}
+    <div class="solution-collapsible" style="margin-top: var(--space-4)">
+      <details>
+        <summary>
+          <span>⚠ View Solution (spoils the challenge)</span>
+          <span>▶</span>
+        </summary>
+        <div class="solution-body">
+          The secure remediation for this lab is available in the
+          <a href="{{ lab_url }}secure" target="_blank" style="color: var(--color-primary)">secure implementation demo</a>
+          tab inside the lab environment.
+        </div>
+      </details>
+    </div>
+  </div>
+
+  {# RIGHT: Interactive environment panel #}
+  <div class="lab-environment">
+    <div class="lab-iframe-wrapper">
+      <div class="lab-iframe-bar">
+        <div class="iframe-dot dot-r"></div>
+        <div class="iframe-dot dot-y"></div>
+        <div class="iframe-dot dot-g"></div>
+        <span>{{ lab.title }} — Lab Environment</span>
+        {% if health.success %}
+        <span style="margin-left:auto;color:var(--color-success)">● Live</span>
+        {% else %}
+        <span style="margin-left:auto;color:var(--color-critical)">● Offline</span>
+        {% endif %}
+      </div>
+      {% if health.success %}
+      <iframe class="lab-iframe-frame" src="{{ lab_url }}" title="{{ lab.title }} Lab Environment"
+              sandbox="allow-forms allow-scripts allow-same-origin"></iframe>
+      {% else %}
+      <div style="height:100%; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:var(--space-4); color:var(--color-text-muted); font-size:var(--text-sm)">
+        <span style="font-size:32px">🐳</span>
+        <p>Lab container is not running.</p>
+        <p style="font-size:var(--text-xs)">Run: <code>docker compose up {{ lab.id|slugify }}-lab</code></p>
+      </div>
+      {% endif %}
+    </div>
+
+    {# Flag submission zone #}
+    <div class="flag-submit-zone">
+      <div style="font-size: var(--text-sm); font-weight: var(--font-weight-semibold)">Submit Flag</div>
+      <p style="font-size: var(--text-xs); color: var(--color-text-muted); margin-top: var(--space-1)">
+        Once you've exploited the vulnerability and obtained the flag, submit it here.
+      </p>
+      <div class="flag-input-row">
+        <input type="text" id="flag-input" placeholder="FLAG{...}" autocomplete="off" spellcheck="false">
+        <button class="btn btn-primary" onclick="submitFlag('{{ lab.id }}')">Submit</button>
+      </div>
+      <div id="verify-result"></div>
+    </div>
+
+    {# Lab Actions #}
+    <div class="lab-actions">
+      <button class="btn btn-secondary" id="reset-btn" onclick="resetLab('{{ lab.id }}')">↺ Reset Lab</button>
+      <a href="{{ lab_url }}secure" target="_blank" class="btn btn-ghost">View Secure Demo →</a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CSRF_TOKEN = '{{ csrf_token }}';
+
+function toggleHint(btn, tier, labId) {
+  const item = btn.parentElement;
+  item.classList.toggle('open');
+}
+
+function submitFlag(labId) {
+  const flag  = document.getElementById('flag-input').value.trim();
+  const result = document.getElementById('verify-result');
+  if (!flag) return;
+
+  fetch(`/labs/${labId}/verify/`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+    body:    JSON.stringify({ flag }),
+  })
+  .then(r => r.json())
+  .then(data => {
+    result.style.display = 'block';
+    if (data.success) {
+      result.className = 'success';
+      result.textContent = `✓ Correct! +${data.xp_awarded} XP awarded.`;
+    } else {
+      result.className = 'error';
+      result.textContent = data.message || '✗ Incorrect flag — keep trying.';
+    }
+  })
+  .catch(() => {
+    result.style.display = 'block';
+    result.className = 'error';
+    result.textContent = 'Network error.';
+  });
+}
+
+function resetLab(labId) {
+  if (!confirm('Reset the lab to its initial vulnerable state?')) return;
+  const btn = document.getElementById('reset-btn');
+  btn.disabled = true;
+  btn.textContent = 'Resetting…';
+
+  fetch(`/labs/${labId}/reset/`, {
+    method:  'POST',
+    headers: { 'X-CSRFToken': CSRF_TOKEN },
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      const iframe = document.querySelector('.lab-iframe-frame');
+      if (iframe) iframe.src = iframe.src;
+      btn.textContent = '↺ Reset Lab';
+    } else {
+      btn.textContent = 'Reset failed';
+    }
+  })
+  .finally(() => { btn.disabled = false; });
+}
+</script>
+{% endblock %}

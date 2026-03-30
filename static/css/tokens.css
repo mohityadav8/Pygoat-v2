@@ -1,0 +1,182 @@
+/*
+ * static/css/tokens.css
+ * ──────────────────────
+ * Goal 5 — UI Consistency Overhaul
+ * Design token system as specified in GSoC 2026 proposal (Section 5).
+ *
+ * All lab templates, challenge pages, and the dashboard import this file
+ * via base.html. No lab page may define its own colour, spacing, or
+ * typography values — all values must come from these tokens.
+ *
+ * Token categories:
+ *   1. Colour tokens
+ *   2. Typography scale
+ *   3. Spacing scale (4px base unit)
+ *   4. Component tokens
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   1. COLOUR TOKENS
+   ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Brand */
+  --color-primary:       #e8432d;   /* OWASP red */
+  --color-primary-dark:  #b33320;
+  --color-primary-light: #ff6b52;
+
+  /* Backgrounds */
+  --color-bg:           #ffffff;
+  --color-bg-secondary: #f8f9fa;
+  --color-bg-code:      #f4f4f5;
+
+  /* Surfaces */
+  --color-surface:      #ffffff;
+  --color-surface-raised: #f8f9fa;
+
+  /* Borders */
+  --color-border:       #e2e8f0;
+  --color-border-focus: #e8432d;
+
+  /* Text */
+  --color-text-primary:   #1a202c;
+  --color-text-secondary: #4a5568;
+  --color-text-muted:     #718096;
+  --color-text-inverse:   #ffffff;
+
+  /* Severity tiers */
+  --color-critical:      #dc2626;
+  --color-critical-bg:   #fef2f2;
+  --color-critical-border: #fecaca;
+
+  --color-high:          #d97706;
+  --color-high-bg:       #fffbeb;
+  --color-high-border:   #fde68a;
+
+  --color-medium:        #d97706;
+  --color-medium-bg:     #fffbeb;
+  --color-medium-border: #fde68a;
+
+  --color-low:           #059669;
+  --color-low-bg:        #ecfdf5;
+  --color-low-border:    #a7f3d0;
+
+  --color-info:          #2563eb;
+  --color-info-bg:       #eff6ff;
+  --color-info-border:   #bfdbfe;
+
+  /* Status */
+  --color-success:       #059669;
+  --color-success-bg:    #ecfdf5;
+  --color-warning:       #d97706;
+  --color-warning-bg:    #fffbeb;
+  --color-error:         #dc2626;
+  --color-error-bg:      #fef2f2;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   2. TYPOGRAPHY SCALE
+   ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  --font-sans:  'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono:  'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+
+  /* rem-based scale */
+  --text-xs:   0.75rem;    /*  12px */
+  --text-sm:   0.875rem;   /*  14px */
+  --text-base: 1rem;       /*  16px */
+  --text-lg:   1.125rem;   /*  18px */
+  --text-xl:   1.25rem;    /*  20px */
+  --text-2xl:  1.5rem;     /*  24px */
+  --text-3xl:  1.875rem;   /*  30px */
+
+  --font-weight-normal:   400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+
+  --line-height-tight:  1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   3. SPACING SCALE  (4px base unit)
+   ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  --space-1:   4px;
+  --space-2:   8px;
+  --space-3:   12px;
+  --space-4:   16px;
+  --space-5:   20px;
+  --space-6:   24px;
+  --space-8:   32px;
+  --space-10:  40px;
+  --space-12:  48px;
+  --space-16:  64px;
+  --space-20:  80px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   4. COMPONENT TOKENS
+   ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Cards and panels */
+  --radius-sm:    4px;
+  --radius-md:    6px;
+  --radius-lg:    8px;
+  --radius-xl:    12px;
+  --radius-full:  9999px;
+
+  --shadow-sm:  0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md:  0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-lg:  0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+
+  --border-width: 1px;
+
+  /* Navigation */
+  --nav-width:    240px;
+  --nav-bg:       #1a1a2e;
+  --nav-text:     #a0aec0;
+  --nav-text-active: #ffffff;
+  --nav-item-active-bg: rgba(232, 67, 45, 0.12);
+  --nav-item-active-border: var(--color-primary);
+
+  /* Lab page layout */
+  --lab-description-width: 45%;
+  --lab-environment-width: 55%;
+  --lab-panel-bg: #f8f9fa;
+  --lab-panel-border: var(--color-border);
+
+  /* Code blocks */
+  --code-bg:      #1e1e2e;
+  --code-text:    #cdd6f4;
+  --code-padding: var(--space-4);
+  --code-radius:  var(--radius-md);
+
+  /* Badges */
+  --badge-padding-x: var(--space-2);
+  --badge-padding-y: var(--space-1);
+  --badge-radius:    var(--radius-sm);
+  --badge-font-size: var(--text-xs);
+  --badge-font-weight: var(--font-weight-semibold);
+
+  /* Buttons */
+  --btn-padding-x:      var(--space-4);
+  --btn-padding-y:      var(--space-2);
+  --btn-radius:         var(--radius-md);
+  --btn-font-weight:    var(--font-weight-medium);
+  --btn-transition:     all 0.15s ease;
+
+  /* Hint accordion */
+  --hint-bg:            #f8f9fa;
+  --hint-border:        var(--color-border);
+  --hint-header-bg:     #ffffff;
+  --hint-cryptic-color: var(--color-info);
+  --hint-direct-color:  var(--color-warning);
+  --hint-walk-color:    var(--color-error);
+
+  /* Progress */
+  --progress-height:    6px;
+  --progress-bg:        #e2e8f0;
+  --progress-radius:    var(--radius-full);
+}

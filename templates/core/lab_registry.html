@@ -1,0 +1,141 @@
+{# templates/core/lab_registry.html
+   Goal 1/3 — Lab Registry with filtering by difficulty, category, language
+#}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Labs{% endblock %}
+{% block breadcrumb %}Lab Registry{% endblock %}
+
+{% block extra_css %}
+<style>
+.lab-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--space-5);
+}
+
+.lab-card {
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+.lab-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+}
+
+.lab-card-top {
+  padding: var(--space-4) var(--space-5);
+  border-bottom: var(--border-width) solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.lab-card-body { padding: var(--space-4) var(--space-5); flex: 1; }
+.lab-card-title { font-size: var(--text-base); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-2); }
+.lab-card-desc  { font-size: var(--text-sm); color: var(--color-text-secondary); line-height: var(--line-height-relaxed); }
+
+.lab-card-footer {
+  padding: var(--space-3) var(--space-5);
+  border-top: var(--border-width) solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.lab-status-bar { height: 3px; }
+.lab-status-bar--completed { background: var(--color-success); }
+.lab-status-bar--active    { background: var(--color-info); }
+.lab-status-bar--not-started { background: var(--color-border); }
+
+.badge-lang { background: var(--color-bg-secondary); color: var(--color-text-secondary); border-color: var(--color-border); }
+
+.no-results { padding: var(--space-12); text-align: center; color: var(--color-text-muted); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Lab Registry</h1>
+    <p class="page-subtitle">{{ labs|length }} labs available — containerised, isolated environments</p>
+  </div>
+</div>
+
+{# Filter Bar #}
+<div class="filter-bar">
+  <a href="{% url 'lab_registry' %}" class="filter-btn {% if not difficulty and not category and not language %}active{% endif %}">All</a>
+
+  {% for d in 'beginner,intermediate,advanced'|split:',' %}
+  <a href="?difficulty={{ d }}{% if category %}&category={{ category }}{% endif %}"
+     class="filter-btn {% if difficulty == d %}active{% endif %}">
+    {{ d|capfirst }}
+  </a>
+  {% endfor %}
+
+  {% for lang in languages %}
+  <a href="?language={{ lang }}{% if difficulty %}&difficulty={{ difficulty }}{% endif %}"
+     class="filter-btn {% if language == lang %}active{% endif %}">
+    {{ lang|capfirst }}
+  </a>
+  {% endfor %}
+
+  <form method="get" style="margin-left: auto">
+    {% if difficulty %}<input type="hidden" name="difficulty" value="{{ difficulty }}">{% endif %}
+    {% if category  %}<input type="hidden" name="category"   value="{{ category }}">{% endif %}
+    <input class="search-input" type="search" name="q" value="{{ q }}" placeholder="Search labs…">
+  </form>
+</div>
+
+{# Lab Grid #}
+{% if labs %}
+<div class="lab-grid">
+  {% for lab in labs %}
+  <a href="{% url 'lab_detail' lab.id %}" class="lab-card">
+
+    {# Status bar at top #}
+    <div class="lab-status-bar lab-status-bar--{{ lab.user_status|default:'not-started'|replace:'_','-' }}"></div>
+
+    <div class="lab-card-top">
+      <div style="display: flex; gap: var(--space-2)">
+        <span class="badge badge-{{ lab.severity }}">{{ lab.severity }}</span>
+        <span class="badge badge-lang">{{ lab.language }}</span>
+      </div>
+      {% if lab.user_status == 'completed' %}
+        <span class="badge badge-status-completed">✓ Done</span>
+      {% elif lab.user_status == 'in_progress' %}
+        <span class="badge badge-status-progress">Active</span>
+      {% endif %}
+    </div>
+
+    <div class="lab-card-body">
+      <div class="lab-card-title">{{ lab.title }}</div>
+      <p  class="lab-card-desc">{{ lab.description }}</p>
+    </div>
+
+    <div class="lab-card-footer">
+      <span>{{ lab.owasp_category }}</span>
+      <span>⚡ {{ lab.xp_reward }} XP · {{ lab.difficulty }}</span>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="no-results">
+  <p style="font-size: var(--text-lg); margin-bottom: var(--space-3)">No labs match your filters.</p>
+  <a href="{% url 'lab_registry' %}" class="btn btn-secondary">Clear filters</a>
+</div>
+{% endif %}
+
+{% endblock %}

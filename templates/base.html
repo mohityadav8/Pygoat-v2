@@ -1,0 +1,129 @@
+{# templates/base.html
+   Goal 5 — Deliverable 5.2
+   Extended by ALL lab templates, challenge pages, and the dashboard.
+   Provides consistent nav, header, footer.
+   Imports tokens.css — no page may define its own design values.
+#}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}PyGoat{% endblock %} — OWASP Security Training</title>
+
+  {% load static %}
+
+  {# Design token system — loaded first so all components inherit variables #}
+  <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  {% block extra_css %}{% endblock %}
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="app-shell">
+
+  {# ── Sidebar Navigation ── #}
+  <nav class="sidebar" role="navigation" aria-label="Main navigation">
+    <div class="sidebar-logo">
+      <span class="logo-icon" aria-hidden="true">🐐</span>
+      <span class="logo-text">PyGoat <sup>v2</sup></span>
+    </div>
+
+    {% if user.is_authenticated %}
+    <ul class="nav-list" role="list">
+      <li class="nav-group-label">Learning</li>
+      <li>
+        <a href="{% url 'dashboard' %}"
+           class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}nav-item--active{% endif %}">
+          <span class="nav-icon" aria-hidden="true">📊</span> Dashboard
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'lab_registry' %}"
+           class="nav-item {% if 'lab' in request.resolver_match.url_name %}nav-item--active{% endif %}">
+          <span class="nav-icon" aria-hidden="true">🧪</span> Labs
+          <span class="nav-badge">{{ all_labs_count }}</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'challenges:list' %}"
+           class="nav-item {% if 'challenge' in request.resolver_match.url_name %}nav-item--active{% endif %}">
+          <span class="nav-icon" aria-hidden="true">🚩</span> Challenges
+        </a>
+      </li>
+
+      <li class="nav-group-label">Tools</li>
+      <li>
+        <a href="{% url 'playgrounds:ssrf' %}"
+           class="nav-item {% if 'playground' in request.resolver_match.url_name %}nav-item--active{% endif %}">
+          <span class="nav-icon" aria-hidden="true">🔬</span> Playgrounds
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'owasp2026' %}"
+           class="nav-item {% if request.resolver_match.url_name == 'owasp2026' %}nav-item--active{% endif %}">
+          <span class="nav-icon" aria-hidden="true">🛡</span> OWASP 2026
+        </a>
+      </li>
+    </ul>
+
+    <div class="sidebar-user">
+      <div class="user-avatar" aria-hidden="true">{{ user.username|first|upper }}</div>
+      <div class="user-info">
+        <span class="user-name">{{ user.username }}</span>
+        {% if user.profile %}
+        <span class="user-xp">⚡ {{ user.profile.xp_points }} XP</span>
+        {% endif %}
+      </div>
+      <a href="{% url 'logout' %}" class="logout-btn" title="Log out">↩</a>
+    </div>
+    {% endif %}
+  </nav>
+
+  {# ── Main Content Area ── #}
+  <div class="main-wrapper">
+
+    {# Top bar #}
+    <header class="topbar" role="banner">
+      <div class="topbar-breadcrumb">
+        <a href="{% url 'dashboard' %}" class="breadcrumb-home">Home</a>
+        <span class="breadcrumb-sep" aria-hidden="true">/</span>
+        <span class="breadcrumb-current">{% block breadcrumb %}{% endblock %}</span>
+      </div>
+
+      <div class="topbar-right">
+        {% if user.is_authenticated and user.profile %}
+        <span class="streak-badge" title="Current streak">
+          🔥 {{ user.profile.streak_days }} day{% if user.profile.streak_days != 1 %}s{% endif %}
+        </span>
+        {% endif %}
+      </div>
+    </header>
+
+    {# Django messages #}
+    {% if messages %}
+    <div class="messages-container" role="alert" aria-live="polite">
+      {% for message in messages %}
+      <div class="message message--{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {# Page content #}
+    <main class="main-content" id="main-content" tabindex="-1">
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="page-footer">
+      <span>PyGoat v2 — OWASP Intentionally Vulnerable Application</span>
+      <span>For educational use only. Never deploy on public networks.</span>
+    </footer>
+  </div>
+</div>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,159 @@
+{# templates/core/owasp2026.html
+   Goal 8 — OWASP Top 10:2026 Preparation Section
+   Deliverables 8.1–8.4: research document, stubs, API Security lab, Supply Chain lab
+#}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}OWASP Top 10:2026{% endblock %}
+{% block breadcrumb %}OWASP 2026{% endblock %}
+
+{% block extra_css %}
+<style>
+.owasp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-5);
+}
+
+.owasp-card {
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  position: relative;
+}
+.owasp-card--new  { border-color: #fca5a5; background: var(--color-error-bg); }
+.owasp-card--stub { opacity: 0.75; }
+
+.owasp-ribbon {
+  position: absolute;
+  top: var(--space-3);
+  right: calc(-1 * var(--border-width));
+  padding: 2px 10px;
+  font-size: 9px;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 6px 50%);
+}
+.owasp-ribbon--new  { background: var(--color-critical); color: white; }
+.owasp-ribbon--stub { background: var(--color-border); color: var(--color-text-muted); }
+
+.owasp-cat-num { font-size: var(--text-xs); color: var(--color-primary); font-weight: var(--font-weight-bold); font-family: var(--font-mono); margin-bottom: var(--space-2); }
+.owasp-title   { font-size: var(--text-base); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-3); }
+.owasp-desc    { font-size: var(--text-sm); color: var(--color-text-secondary); line-height: var(--line-height-relaxed); margin-bottom: var(--space-4); }
+
+.chip-row { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.chip {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  border: var(--border-width) solid var(--color-border);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+}
+
+.draft-notice {
+  background: var(--color-warning-bg);
+  border: var(--border-width) solid #fde68a;
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-warning);
+  margin-bottom: var(--space-6);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">OWASP Top 10: 2026</h1>
+    <p class="page-subtitle">Forward-looking coverage — draft categories and new labs</p>
+  </div>
+  <span style="background:var(--color-error-bg);border:1px solid #fca5a5;border-radius:var(--radius-md);padding:var(--space-2) var(--space-3);font-size:var(--text-xs);color:var(--color-critical);font-weight:var(--font-weight-semibold)">DRAFT SPEC</span>
+</div>
+
+<div class="draft-notice">
+  ⚠ The OWASP Top 10:2026 specification is still in draft. Categories below are based on the OWASP working
+  group notes and community data submissions. Labs marked <strong>STUB</strong> will be fully populated
+  once the spec is finalised. Labs marked <strong>NEW</strong> are ready to use now.
+</div>
+
+{# ── Stub/New Category Cards (Deliverable 8.2) ── #}
+<h2 style="font-size:var(--text-lg);font-weight:var(--font-weight-semibold);margin-bottom:var(--space-5)">Draft Categories</h2>
+<div class="owasp-grid" style="margin-bottom: var(--space-10)">
+
+  <div class="owasp-card">
+    <div class="owasp-cat-num">A01:2026 (Expected)</div>
+    <div class="owasp-title">Broken Access Control</div>
+    <p class="owasp-desc">Retained from 2021, expanded to cover BOLA and BFLA in REST/GraphQL APIs. New emphasis on mass assignment and feature-level access control failures in microservices.</p>
+    <div class="chip-row"><span class="chip">BOLA</span><span class="chip">BFLA</span><span class="chip">IDOR</span><span class="chip">GraphQL</span></div>
+  </div>
+
+  <div class="owasp-card owasp-card--new">
+    <div class="owasp-ribbon owasp-ribbon--new">NEW</div>
+    <div class="owasp-cat-num">A0X:2026 (New)</div>
+    <div class="owasp-title">API Security Failures</div>
+    <p class="owasp-desc">Breaking out from A01:2021 — dedicated category for REST, GraphQL, and gRPC vulnerabilities. Covers BOLA, broken function-level auth, excessive data exposure, and missing rate limiting.</p>
+    <div class="chip-row"><span class="chip">REST API</span><span class="chip">GraphQL</span><span class="chip">gRPC</span><span class="chip">Rate Limiting</span></div>
+  </div>
+
+  <div class="owasp-card owasp-card--new">
+    <div class="owasp-ribbon owasp-ribbon--new">NEW</div>
+    <div class="owasp-cat-num">A0X:2026 (New)</div>
+    <div class="owasp-title">AI / ML Security Risks</div>
+    <p class="owasp-desc">Prompt injection, model inversion attacks, training data poisoning, and insecure LLM deployment in web applications. Driven by LLM proliferation since 2023.</p>
+    <div class="chip-row"><span class="chip">Prompt Injection</span><span class="chip">Model Inversion</span><span class="chip">LLM</span></div>
+  </div>
+
+  <div class="owasp-card owasp-card--new">
+    <div class="owasp-ribbon owasp-ribbon--new">NEW</div>
+    <div class="owasp-cat-num">A0X:2026 (New)</div>
+    <div class="owasp-title">Supply Chain Attacks</div>
+    <p class="owasp-desc">Dependency confusion, typosquatting on package registries (npm, pip), malicious packages, and compromised CI/CD pipelines. SolarWinds-pattern applied at the application layer.</p>
+    <div class="chip-row"><span class="chip">Dep. Confusion</span><span class="chip">Typosquatting</span><span class="chip">CI/CD</span><span class="chip">pip</span></div>
+  </div>
+
+  <div class="owasp-card owasp-card--stub">
+    <div class="owasp-ribbon owasp-ribbon--stub">STUB</div>
+    <div class="owasp-cat-num">A03:2026 (Expected)</div>
+    <div class="owasp-title">Injection (Expanded)</div>
+    <p class="owasp-desc">Retained — expanded to explicitly include SSTI, OS command injection, LDAP injection, and expression language injection as first-class members of the category.</p>
+    <div class="chip-row"><span class="chip">SQLi</span><span class="chip">SSTI</span><span class="chip">Command</span><span class="chip">LDAP</span></div>
+  </div>
+
+  <div class="owasp-card owasp-card--stub">
+    <div class="owasp-ribbon owasp-ribbon--stub">STUB</div>
+    <div class="owasp-cat-num">A08:2026 (Updated)</div>
+    <div class="owasp-title">Software & Data Integrity</div>
+    <p class="owasp-desc">Expands 2021 scope to cover CI/CD pipeline integrity, unsigned artifact deployment, and insecure deserialisation in distributed systems and microservice architectures.</p>
+    <div class="chip-row"><span class="chip">CI/CD</span><span class="chip">Deserialisation</span><span class="chip">Artifacts</span></div>
+  </div>
+
+</div>
+
+{# ── Active New Labs (Deliverables 8.3, 8.4) ── #}
+<h2 style="font-size:var(--text-lg);font-weight:var(--font-weight-semibold);margin-bottom:var(--space-5)">New Labs Available Now</h2>
+
+{% if new_labs %}
+<div class="owasp-grid">
+  {% for lab in new_labs %}
+  <div class="owasp-card owasp-card--new">
+    <div class="owasp-ribbon owasp-ribbon--new">NEW LAB</div>
+    <div class="owasp-cat-num">{{ lab.owasp_category }}</div>
+    <div class="owasp-title">{{ lab.title }}</div>
+    <p class="owasp-desc">{{ lab.description }}</p>
+    <div class="chip-row" style="margin-bottom: var(--space-4)">
+      {% for tag in lab.tags %}<span class="chip">{{ tag }}</span>{% endfor %}
+    </div>
+    <a href="{% url 'lab_detail' lab.id %}" class="btn btn-primary btn-sm">Start Lab →</a>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p style="color: var(--color-text-muted); font-size: var(--text-sm)">New labs will appear here as they are completed.</p>
+{% endif %}
+
+{% endblock %}

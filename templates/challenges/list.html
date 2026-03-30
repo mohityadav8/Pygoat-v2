@@ -1,0 +1,168 @@
+{# templates/challenges/list.html
+   Goal 6 — Expanded Challenges with flag-based verification and 3-tier hints
+#}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Challenges{% endblock %}
+{% block breadcrumb %}Challenges{% endblock %}
+
+{% block extra_css %}
+<style>
+.challenge-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: var(--space-5);
+}
+
+.challenge-card {
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+}
+.challenge-card.solved { border-color: var(--color-success); }
+
+.challenge-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: var(--space-3); }
+.challenge-num    { font-size: var(--text-xs); color: var(--color-text-muted); font-family: var(--font-mono); }
+.challenge-xp     { font-size: var(--text-xs); color: var(--color-warning); font-weight: var(--font-weight-semibold); }
+.challenge-title  { font-size: var(--text-base); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-2); }
+.challenge-desc   { font-size: var(--text-sm); color: var(--color-text-secondary); line-height: var(--line-height-relaxed); margin-bottom: var(--space-4); }
+
+.hint-row { display: flex; gap: var(--space-2); margin-bottom: var(--space-4); }
+.hint-btn-sm {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: var(--border-width) solid var(--color-border);
+  background: var(--color-bg-secondary);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  transition: var(--btn-transition);
+}
+.hint-btn-sm:hover { border-color: var(--color-warning); color: var(--color-warning); }
+
+.flag-row { display: flex; gap: var(--space-2); }
+.flag-row input { font-family: var(--font-mono); flex: 1; font-size: var(--text-sm); }
+
+.verify-msg { margin-top: var(--space-2); font-size: var(--text-xs); display: none; }
+.verify-msg.ok  { color: var(--color-success); }
+.verify-msg.err { color: var(--color-error); }
+
+.hint-reveal-box {
+  background: var(--color-bg-secondary);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-3);
+  display: none;
+  line-height: var(--line-height-relaxed);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Challenge Arena</h1>
+    <p class="page-subtitle">
+      {{ solved_count }} of {{ total_count }} challenges solved
+    </p>
+  </div>
+</div>
+
+<div class="challenge-grid">
+  {% for item in challenge_data %}
+  {% with c=item.challenge solved=item.is_solved %}
+  <div class="challenge-card {% if solved %}solved{% endif %}" id="card-{{ c.pk }}">
+
+    <div class="challenge-header">
+      <div>
+        <div class="challenge-num">C{{ c.pk|stringformat:"02d" }} · {{ c.get_category_display }}</div>
+        <div style="font-size: var(--text-xs); color: var(--color-text-muted); margin-top: 2px">{{ c.get_difficulty_display }}</div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px">
+        <span class="challenge-xp">⚡ {{ c.xp_reward }} XP</span>
+        {% if solved %}
+        <span class="badge badge-status-completed" style="font-size:9px">✓ Solved</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="challenge-title">{{ c.name }}</div>
+    <p class="challenge-desc">{{ c.description }}</p>
+
+    {# 3-tier hint system (Deliverable 6.2) #}
+    <div class="hint-row">
+      <button class="hint-btn-sm" onclick="revealHint({{ c.pk }}, 1)">💡 Free</button>
+      <button class="hint-btn-sm" onclick="revealHint({{ c.pk }}, 2)">🔦 −10 XP</button>
+      <button class="hint-btn-sm" onclick="revealHint({{ c.pk }}, 3)">📖 −30 XP</button>
+    </div>
+    <div class="hint-reveal-box" id="hint-box-{{ c.pk }}"></div>
+
+    {# Flag submission #}
+    {% if not solved %}
+    <div class="flag-row">
+      <input type="text" id="flag-{{ c.pk }}" placeholder="FLAG{...}" autocomplete="off" spellcheck="false"
+             onkeydown="if(event.key==='Enter') submitFlag({{ c.pk }})">
+      <button class="btn btn-primary btn-sm" onclick="submitFlag({{ c.pk }})">Submit</button>
+    </div>
+    <div class="verify-msg" id="msg-{{ c.pk }}"></div>
+    {% else %}
+    <div style="font-size: var(--text-sm); color: var(--color-success)">✓ Flag accepted</div>
+    {% endif %}
+
+  </div>
+  {% endwith %}
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CSRF_TOKEN = '{{ csrf_token }}';
+
+function submitFlag(challengeId) {
+  const flag = document.getElementById('flag-' + challengeId).value.trim();
+  const msg  = document.getElementById('msg-' + challengeId);
+  if (!flag) return;
+
+  fetch(`/challenges/${challengeId}/submit/`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+    body:    JSON.stringify({ flag }),
+  })
+  .then(r => r.json())
+  .then(data => {
+    msg.style.display = 'block';
+    if (data.success) {
+      msg.className  = 'verify-msg ok';
+      msg.textContent = `✓ Correct! +${data.xp_awarded} XP`;
+      document.getElementById('card-' + challengeId).classList.add('solved');
+    } else {
+      msg.className  = 'verify-msg err';
+      msg.textContent = data.message;
+    }
+  });
+}
+
+function revealHint(challengeId, tier) {
+  const box = document.getElementById('hint-box-' + challengeId);
+
+  fetch(`/challenges/${challengeId}/hint/`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+    body:    JSON.stringify({ tier }),
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      box.style.display = 'block';
+      box.innerHTML = `<strong>Tier ${tier} hint:</strong> ${data.hint}`;
+    }
+  });
+}
+</script>
+{% endblock %}
